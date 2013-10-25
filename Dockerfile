@@ -35,8 +35,9 @@ RUN cat /home/hduser/.ssh/master.pub >> /home/hduser/.ssh/authorized_keys
 # Now you can sshd into docker with 'ssh -i /home/hduser/.ssh/master hduser@localhost'
 
 # Adding Hadoop
-RUN mkdir -p /usr/local/hadoop
+ADD conf /usr/local/hadoop-conf
 ADD hadoop /usr/local/
+RUN cp /usr/local/hadoop-conf/* /usr/local/hadoop/
 RUN chown -R hduser:hadoop /usr/local/hadoop
 
 # Environment variables
@@ -48,7 +49,6 @@ ENV PATH $HADOOP_HOME/bin:$PATH
 RUN mkdir -p /app/hadoop/tmp
 RUN locale-gen en_US en_US.UTF-8
 
-ADD conf /usr/local/hadoop
 
 EXPOSE 22
 
