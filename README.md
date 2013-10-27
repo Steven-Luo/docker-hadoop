@@ -53,7 +53,12 @@ $ make stop-cluster
 
 You can use ssh into any machine from the Ubuntu machine connecting to any for the nodes:
 ```
-ssh hduser@10.0.10.5 -i keys/master -o StrictHostKeyChecking=no -q
+$ ssh hduser@10.0.10.5 -i keys/master -o StrictHostKeyChecking=no -q
+```
+
+Inside a node you can ssh simply by doing:
+```
+$ ssh hadoop8
 ```
 
 Inside you can use the hadoop command line tool.
@@ -69,3 +74,6 @@ Every node is named hadoop${num} (e.g. hadoop6). The first 3 are used for the Jo
 If you want to modify the number of nodes in the cluster you have to modify:
 
 `hadoop-conf/slaves` and `bin/start-cluster.sh`
+
+Private and public keys are pre-built for managing the cluster, you should create your own.
+
