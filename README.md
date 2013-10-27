@@ -69,11 +69,11 @@ Inside you can use the hadoop command line tool.
 
 ## Default configuration
 
-Every node is named hadoop${num} (e.g. hadoop6). The first 3 are used for the JobTracker, NameNode and SecondaryNameNode respectively.
+Every node is named `hadoop${num}` (e.g. `hadoop6`). The first 3 are used for the JobTracker, NameNode and SecondaryNameNode respectively.
 
 If you want to modify the number of nodes in the cluster you have to modify:
 
 `hadoop-conf/slaves` and `bin/start-cluster.sh`
 
-Private and public keys are pre-built for managing the cluster, you should create your own.
+Private and public keys are pre-generated for managing the cluster, you should create your own.
 
