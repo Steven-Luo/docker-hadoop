@@ -1,3 +1,4 @@
 bin/pipework
 hadoop
 conf
+.vagrant

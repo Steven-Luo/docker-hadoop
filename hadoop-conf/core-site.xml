@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/app/hadoop/tmp</value>
+    <description>A base for other temporary directories.</description>
+  </property>
+  <property>
+    <name>fs.default.name</name>
+    <value>hdfs://10.0.10.2:54310</value>
+    <!-- Using IP because of Docker writes "127.0.0.1 hadoop2" in the /etc/hosts file
+    making the NameNode bind to localhost insted of the public IP-->
+    <description>The name of the default file system.  A URI whose
+  scheme and authority determine the FileSystem implementation.  The
+  uri's scheme determines the config property (fs.SCHEME.impl) naming
+  the FileSystem implementation class.  The uri's authority is used to
+  determine the host, port, etc. for a filesystem.</description>
+  </property>
+</configuration>
