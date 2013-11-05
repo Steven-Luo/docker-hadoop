@@ -7,6 +7,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "raring"
   config.vm.box_url = "http://cloud-images.ubuntu.com/raring/current/raring-server-cloudimg-vagrant-amd64-disk1.box"
   config.vm.network "forwarded_port", guest: 5000, host: 5000
+  config.vm.network "forwarded_port", guest: 9090, host: 9090
 
   config.vm.provider "virtualbox" do |v|
     v.customize ["modifyvm", :id,  "--memory", 8192]
@@ -37,13 +38,21 @@ Vagrant.configure("2") do |config|
     # Install Docker
     install_docker            = "apt-get install -q -y --force-yes lxc-docker;"
 
+    # Install Python setuptools
+    install_setuptools        = "wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | sudo python2.7;"
+
+    # Install pip
+    install_pip               = "curl --silent --show-error --retry 5 https://raw.github.com/pypa/pip/master/contrib/get-pip.py | sudo python2.7;"
+
     # Put it all together,
     icmd = "#{apt_update} "\
            "#{aufs_supp} "\
            "#{add_docker_repo} "\
            "#{add_docker_repo_key}"\
            "#{apt_update} "\
-           "#{install_docker}"
+           "#{install_docker}"\
+           "#{install_setuptools}"\
+           "#{install_pip}"
 
     # And run it.
     config.vm.provision :shell, :inline => icmd

@@ -2,3 +2,4 @@ bin/pipework
 hadoop
 conf
 .vagrant
+*.pyc
