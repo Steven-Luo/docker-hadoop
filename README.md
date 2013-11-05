@@ -77,3 +77,19 @@ If you want to modify the number of nodes in the cluster you have to modify:
 
 Private and public keys are pre-generated for managing the cluster, you should create your own.
 
+## Dashboard
+
+![Dashboard Preview](https://f.cloud.github.com/assets/653497/1478907/40eaa52a-4675-11e3-8df8-563aa01a13bf.png)
+
+You can start the dashboard by doing
+
+```
+$ cd dashboard
+$ pip install -f requirements.txt
+$ python run_app.py
+```
+
+You may need to run both `pip install` and `run_app.py` with `sudo`.
+
+
+
