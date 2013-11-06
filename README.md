@@ -31,7 +31,7 @@ Before building the image you need to copy (or move) the Hadoop folder inside `d
 
 To customize the Hadoop configuration you have to save it to hadoop-conf, try to mimick the already working config and take special care with the `core-site.xml`, `mapred-site.xml` values.
 
-Where everything is ready you can build the container using
+When everything is ready, you can build the container by using
 
 ```
 $ make hadoop-container
