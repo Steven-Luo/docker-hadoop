@@ -2,8 +2,11 @@
 {% block content %}
 <div class="page-header">
     <h1>Inpect {{container.ID[:15]}}</h1>
-    <a class="pull-right" href="/">volver al Dashboard</a>
+
     <p class="lead">Details of {{container.Config.Hostname}}</p>
+        <button type="button" class="btn btn-warning">Stop container</button>
+        <button type="button" class="btn btn-danger">Kill container</button>
+    <a class="pull-right" href="/">back to Dashboard</a>
 </div>
 <div class="row">
     <div class="col-md-8">

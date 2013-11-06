@@ -7,9 +7,12 @@
 <div class="row">
     <div class="col-md-8">
         <div class="panel panel-default">
-            <div class="panel-heading">Running nodes</div>
+            <div class="panel-heading">
+                Running nodes
+            </div>
             <table class="table">
                 <tr>
+                    <th><input type="checkbox"></th>
                     <th>#</th>
                     <th>Id</th>
                     <th>Image</th>
@@ -18,8 +21,9 @@
                 </tr>
                 {% for node in running %}
                     <tr>
+                        <td><input type="checkbox"></td>
                         <td>{{loop.index0}}</td>
-                        <td><a href="/inspect/{{node.Id[:15]}}">{{node.Id[:15]}}</a></td>
+                        <td><a href="/container/{{node.Id[:15]}}">{{node.Id[:15]}}</a></td>
                         <td>{{node.Image}}</td>
                         <td>{{node.Status}}</td>
                         <td><a href="#"><span class="glyphicon glyphicon-pause"></span></a></td>
@@ -44,30 +48,33 @@
                 <input type="text" class="form-control" id="inputIp" placeholder="10.0.10.16">
             </div>
 
-            <div class="checkbox">
-                <label>
-                    <input type="checkbox">JobTracker
-                </label>
-            </div>
-              <div class="checkbox">
-                <label>
-                    <input type="checkbox">NameNode
-                </label>
-            </div>
-              <div class="checkbox">
-                <label>
-                    <input type="checkbox">TaskTracker
-                </label>
-            </div>
-              <div class="checkbox">
-                <label>
-                    <input type="checkbox">DataNode
-                </label>
-            </div>
-            <div class="checkbox">
-                <label>
-                    <input type="checkbox">SecondaryNameNode
-                </label>
+            <div class="form-group">
+                <label>Start service</label>
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox">JobTracker
+                    </label>
+                </div>
+                  <div class="checkbox">
+                    <label>
+                        <input type="checkbox">NameNode
+                    </label>
+                </div>
+                  <div class="checkbox">
+                    <label>
+                        <input type="checkbox">TaskTracker
+                    </label>
+                </div>
+                  <div class="checkbox">
+                    <label>
+                        <input type="checkbox">DataNode
+                    </label>
+                </div>
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox">SecondaryNameNode
+                    </label>
+                </div>
             </div>
           </div>
           <button type="submit" class="btn btn-default">Start</button>
