@@ -10,7 +10,7 @@ RUN sed -i.bak 's/main$/main universe/' /etc/apt/sources.list
 RUN apt-get update
 
 # Install curl, ssh, dnsmasq, ping, telnet, net-tools (last 3 for debugging)
-RUN apt-get install -y curl dnsmasq openssh-server inetutils-ping telnet net-tools
+RUN apt-get install -y curl dnsmasq openssh-server inetutils-ping telnet net-tools dnsutils
 
 # Adding webupd8team ppa
 RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu precise main\ndeb-src http://ppa.launchpad.net/webupd8team/java/ubuntu precise main" >>  /etc/apt/sources.list

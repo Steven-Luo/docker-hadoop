@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-    <h1>Inpect {{container.ID[:15]}}</h1>
+    <h1>Inpect {{container.ID[:12]}}</h1>
 
     <p class="lead">Details of {{container.Config.Hostname}}</p>
         <button type="button" class="btn btn-warning">Stop container</button>
@@ -12,6 +12,7 @@
     <div class="col-md-8">
         <ul>
             <li>Created: {{container.Created}}</li>
+            <li>IP: {{container.ip}}</li>
             <li>Image: {{container.Config.Image}}</li>
             <li>ImageId: {{container.Image}}</li>
             <li>Hostname: {{container.Config.Hostname}}</li>

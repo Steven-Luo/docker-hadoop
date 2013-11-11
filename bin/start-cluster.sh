@@ -2,7 +2,7 @@
 
 set -e
 
-NUM_NODES=15
+NUM_NODES=20
 
 if sudo docker ps | grep "vierja/hadoop" >/dev/null; then
   echo ""
