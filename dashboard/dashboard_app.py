@@ -1,5 +1,5 @@
 from flask import Blueprint
-from flask import current_app
+from flask import current_app, request
 from flask import render_template, jsonify
 from functools import wraps
 import docker
@@ -28,8 +28,26 @@ def setup_cluster():
     except Exception as e:
         print e
 
-@dashboard_app.route('/')
+@dashboard_app.route('/', methods=['GET', 'POST'])
 def overview():
+    if request.method == 'POST':
+        cluster = []
+        hosts = request.form.getlist('host[]')
+        ips = request.form.getlist('ip[]')
+        services = request.form.getlist('services[]')
+
+        for pos, image in enumerate(request.form.getlist('image[]')):
+            node = {
+                'image': image,
+                'hostname': hosts[pos],
+                'ip': ips[pos],
+                'services': [service[service.find('-') + 1:] for service in services if service[0:service.find('-')] == str(pos + 1)]
+            }
+            cluster.append(node)
+
+        for node_started in current_app.cluster.start_cluster(cluster):
+            print 'NODE STARTED: ', node_started
+
     running = current_app.cluster.list_cluster()
     return render_template('main.html', running=running)
 

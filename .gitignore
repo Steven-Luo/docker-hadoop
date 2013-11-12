@@ -3,3 +3,4 @@ hadoop
 .vagrant
 *.pyc
 *.db
+.DS_STORE

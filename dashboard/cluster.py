@@ -98,7 +98,7 @@ class Cluster(object):
                 self.start_service(node['ip'], node['services'])
 
                 # Yielding
-                yield 'DONE'
+                yield node['hostname']
 
             except Exception as e:
                 print "Failed to start the cluster.", e
