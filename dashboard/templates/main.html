@@ -6,44 +6,63 @@
 <div class="row">
     {% if running %}
         <div class="col-md-8">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    Running nodes
+            <div class="row">
+                <div class="btn-group pull-right">
+                    <button type="button" class="btn btn-danger">Stop cluster</button>
+                    <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown">
+                        <span class="caret"></span>
+                        <span class="sr-only">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="#" id="stop-cluster">Are you sure?</a></li>
+                    </ul>
                 </div>
-                <table class="table">
-                    <tr>
-                        <th>
-                            <input type="checkbox">
-                        </th>
-                        <th>#</th>
-                        <th>Id</th>
-                        <th>Image</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                    {% for node in running %}
+            </div>
+            <br/>
+            <div class="row">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        Running nodes
+                    </div>
+                    <table class="table">
                         <tr>
-                            <td>
+                            <th>
                                 <input type="checkbox">
-                            </td>
-                            <td>{{loop.index0}}</td>
-                            <td><a href="/container/{{node.Id[:15]}}">{{node.Id[:15]}}</a>
-                            </td>
-                            <td>{{node.Image}}</td>
-                            <td>{{node.Status}}</td>
-                            <td>
-                                <a href="#">
-                                    <span class="glyphicon glyphicon-pause"></span>
-                                </a>
-                            </td>
-                            <td>
-                                <a href="#">
-                                    <span class="glyphicon glyphicon-stop"></span>
-                                </a>
-                            </td>
+                            </th>
+                            <th>#</th>
+                            <th>Id</th>
+                            <th>Image</th>
+                            <th>IP</th>
+                            <th>Services</th>
+                            <th>Status</th>
+                            <th></th>
                         </tr>
-                    {% endfor %}
-                </table>
+                        {% for node in running %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox">
+                                </td>
+                                <td>{{loop.index0}}</td>
+                                <td><a href="/container/{{node.Id[:12]}}">{{node.Id[:12]}}</a>
+                                </td>
+                                <td>{{node.Image}}</td>
+                                <td>{{node.ip}}</td>
+                                <td>{{node.services}}</td>
+                                <td>{{node.node_status}}</td>
+                                <td>
+                                    <a href="#">
+                                        <span class="glyphicon glyphicon-pause"></span>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="#">
+                                        <span class="glyphicon glyphicon-stop"></span>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
@@ -92,37 +111,89 @@
             <button type="submit" class="btn btn-default">Start</button>
             </form>
         </div>
+        <script type="text/javascript">
+            $("#stop-cluster").on("click", function(){
+                $.post("/stop-cluster", function(data) {
+                    console.log("Cluster stopped.");
+                    location.reload();
+                });
+                return false;
+            });
+        </script>
     {% else %}
         <p class="lead">No cluster running. Start a cluster.</p>
         <div class="col-md-10">
-            <form class="form-inline" role="form" action="/" method="POST">
-                {% for rownum in range(1,10) %}
+            <form class="form-inline" role="form" action="/" method="POST" id="new-cluster-form">
+                <button type="button" class="btn btn-default" id="add-node">
+                    <span class="glyphicon glyphicon-plus-sign"></span> Add node
+                </button>
+                <button type="button" class="btn btn-default" id="remove-node">
+                    <span class="glyphicon glyphicon-minus-sign"></span> Remove node
+                </button>
+                <button type="submit" class="btn btn-default">Start cluster</button>
+                {% for rownum in range(1,6) %}
                 <div class="row form-row">
+                        <input type="hidden" class="reference-num" value="{{rownum}}" />
                         <div class="form-group">
-                            <select class="selectpicker" name="image[]">
+                            <select class="selectpicker" name="image[{{rownum}}]">
                                 <option selected>vierja/hadoop</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <input type="text" name="host[]" class="form-control" placeholder="hadoop{{rownum}}" value="hadoop{{rownum}}">
+                            <input type="text" name="host[{{rownum}}]" class="form-control" placeholder="hadoop{{rownum}}" value="hadoop{{rownum}}">
                         </div>
                         <div class="form-group">
-                            <input type="text" name="ip[]" class="form-control" placeholder="10.0.10.{{rownum}}" value="10.0.10.{{rownum}}">
+                            <input type="text" name="ip[{{rownum}}]" class="form-control" placeholder="10.0.10.{{rownum}}" value="10.0.10.{{rownum}}">
                         </div>
                         <div class="checkbox">
-                            <select class="selectpicker" name="services[]" multiple data-selected-text-format="count>3">
-                                <option value="{{rownum}}-JOBTRACKER" {{'selected' if rownum == 1}}>JobTracker</option>
-                                <option value="{{rownum}}-NAMENODE" {{'selected' if rownum == 2}}>NameNode</option>
-                                <option value="{{rownum}}-SECONDARYNAMENODE" {{'selected' if rownum == 3}}>Secondary NameNode</option>
-                                <option value="{{rownum}}-TASKTRACKER" {{'selected' if rownum > 3}}>TaskTracker</option>
-                                <option value="{{rownum}}-DATANODE" {{'selected' if rownum > 3}}>DataNode</option>
+                            <select class="selectpicker" name="services[{{rownum}}]" multiple data-selected-text-format="count>3">
+                                <option value="JOBTRACKER" {{'selected' if rownum == 1}}>JobTracker</option>
+                                <option value="NAMENODE" {{'selected' if rownum == 2}}>NameNode</option>
+                                <option value="SECONDARYNAMENODE" {{'selected' if rownum == 3}}>Secondary NameNode</option>
+                                <option value="TASKTRACKER" {{'selected' if rownum > 3}}>TaskTracker</option>
+                                <option value="DATANODE" {{'selected' if rownum > 3}}>DataNode</option>
                             </select>
                         </div>
                 </div>
                 {% endfor %}
-                <button type="submit" class="btn btn-default">Start cluster</button>
             </form>
         </div>
+        <script type="text/javascript">
+            $("#remove-node").on("click", function(){
+                $("#new-cluster-form>.form-row:last").remove();
+                return false;
+            });
+
+            $("#add-node").on("click", function(){
+                $("#new-cluster-form>.form-row:last").clone().appendTo($("#new-cluster-form"));
+                var last_row = $("#new-cluster-form>.form-row:last");
+                var new_num = parseInt(last_row.find(".reference-num").val()) + 1;
+                last_row.find(".reference-num").val(new_num);
+
+                var fix_field = function(index) {
+                    var j_obj = $(this);
+                    var name_attr = j_obj.attr("name");
+                    if (name_attr) {
+                        j_obj.attr("name", name_attr.replace(/\[\d+\]/g, "[" + new_num + "]"));
+                        if (name_attr.search("ip") != -1) {
+                            var value_attr = j_obj.attr("value");
+                            value_attr = value_attr.replace(/\.\d+$/, "." + new_num);
+                            j_obj.attr("value", value_attr);
+                            j_obj.attr("placeholder", value_attr);
+                        }
+                        if (name_attr.search("host") != -1) {
+                            var value_attr = j_obj.attr("value");
+                            value_attr = value_attr.replace(/\d+$/, "" + new_num);
+                            j_obj.attr("value", value_attr);
+                            j_obj.attr("placeholder", value_attr);
+                        }
+                    }
+                }
+                last_row.find("select").each(fix_field);
+                last_row.find("input").each(fix_field);
+                return false;
+            });
+        </script>
     {% endif %}
 </div>
 {% endblock %}

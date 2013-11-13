@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask import current_app, request
-from flask import render_template, jsonify
+from flask import render_template, jsonify, redirect, url_for
 from functools import wraps
 import docker
 from cluster import Cluster
@@ -35,13 +35,29 @@ def overview():
         hosts = request.form.getlist('host[]')
         ips = request.form.getlist('ip[]')
         services = request.form.getlist('services[]')
+        print "hosts:", hosts
+        print "ips:", ips
+        print "services:", services
 
-        for pos, image in enumerate(request.form.getlist('image[]')):
+        count = 1
+        while True:
+            host = request.form.get('host[' + str(count) + ']')
+            if not host:
+                break
+
+            image = request.form.get('image[' + str(count) + ']')
+            ip = request.form.get('ip[' + str(count) + ']')
+            services = request.form.getlist('services[' + str(count) + ']')
+
+            print count, "variables:", image, host, ip, services
+
+            count += 1
+
             node = {
                 'image': image,
-                'hostname': hosts[pos],
-                'ip': ips[pos],
-                'services': [service[service.find('-') + 1:] for service in services if service[0:service.find('-')] == str(pos + 1)]
+                'hostname': host,
+                'ip': ip,
+                'services': services
             }
             cluster.append(node)
 
@@ -50,6 +66,11 @@ def overview():
 
     running = current_app.cluster.list_cluster()
     return render_template('main.html', running=running)
+
+@dashboard_app.route('/stop-cluster', methods=['POST'])
+def stop_cluster():
+    current_app.cluster.stop_cluster()
+    return jsonify(dict(response='Cluster killed', status=200))
 
 @dashboard_app.route('/container/<container_id>')
 def inspect(container_id):

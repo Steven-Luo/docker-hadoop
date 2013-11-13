@@ -4,6 +4,7 @@ import dataset
 import times
 import time
 import iptools
+from threading import Thread
 
 
 class InvalidCluster(Exception):
@@ -34,6 +35,8 @@ class Cluster(object):
             node = self.db['node'].find_one(container_id=running['Id'][:12])
             if node is not None:
                 running['ip'] = node['ip']
+                running['services'] = node['services']
+                running['node_status'] = node['status']
                 nodes.append(running)
 
         return nodes
@@ -43,25 +46,30 @@ class Cluster(object):
         node = self.db['node'].find_one(container_id=container_id)
         if node is not None:
             container['ip'] = node['ip']
+            container['services'] = node['services']
         return container
 
     def start_container(self, container_id):
         resp = self.docker.start(container_id)
-        db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
+        self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
         return resp
 
     def stop_container(self, container_id):
         resp = self.docker.stop(container_id, timeout=5)
-        db['node'].update(dict(container_id=container_id, status='stopped'), ['container_id'])
+        self.db['node'].update(dict(container_id=container_id, status='stopped'), ['container_id'])
         return resp
 
     def kill_container(self, container_id):
         resp = self.docker.kill(container_id)
-        db['node'].delete(container_id=container_id)
+        self.db['node'].delete(container_id=container_id)
         return resp
 
     def stop_cluster(self):
-        pass
+        for node in self.db['node']:
+            resp = self.docker.kill(node['container_id'])
+
+        self.db['node'].delete() # Delete all just in case.
+
 
     def start_cluster(self, cluster):
         """
@@ -80,7 +88,7 @@ class Cluster(object):
                 self.docker.start(container_id)
 
                 # Sleeping 1 sec before setting ip
-                time.sleep(1)
+                #time.sleep(1)
 
                 # Setting IP
                 command = 'sudo ./bin/pipework br1 ' + container_id + ' "' + node['ip'] + '/24"'
@@ -88,14 +96,15 @@ class Cluster(object):
                 assert res.status_code == 0
 
                 # Adding to DB
-                node_table.insert(dict(container_id=container_id, image=node['image'], hostname=node['hostname'], ip=node['ip'], services=','.join(node['services']), created_date=times.now(), status='running'))
+                node_table.insert(dict(container_id=container_id, image=node['image'], hostname=node['hostname'], ip=node['ip'], services=','.join(node['services']), created_date=times.now(), status='starting'))
 
                 # Setting host if not already
                 if self.host_ip is None:
                     # Set the host_ip as the last IP in the subnet used.
                     self.host_ip = self.set_host_ip(node['ip'])
 
-                self.start_service(node['ip'], node['services'])
+                thr = Thread(target = self.start_service, args = [container_id, node['ip'], node['services']])
+                thr.start()
 
                 # Yielding
                 yield node['hostname']
@@ -193,11 +202,14 @@ class Cluster(object):
         assert res.status_code == 0
         return host_ip
 
-    def start_service(self, node_ip, services):
+    def start_service(self, container_id, node_ip, services):
         """
         Start services (list) in node_ip using SSH.
         """
-        command = 'ssh hduser@' + node_ip + ' -i ../keys/master -o StrictHostKeyChecking=no -q /usr/local/hadoop/bin/'
+        # Sleep 1 seconds before starting.
+        time.sleep(4)
+        print "Starting services:", services, "on", node_ip
+        command = 'ssh hduser@' + node_ip + ' -i ../keys/master -o StrictHostKeyChecking=no /usr/local/hadoop/bin/'
         for service in services:
             if service == 'NAMENODE':
                 run_command = command + 'hadoop namenode -format'
@@ -206,4 +218,13 @@ class Cluster(object):
 
             run_command = command + 'hadoop-daemon.sh start ' + service.lower()
             res = envoy.run(run_command)
+            if res.status_code != 0:
+                print "Error starting:", node_ip
+                print res.std_out
+                print res.std_err
+
             assert res.status_code == 0
+
+        self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
+        print "Started services:", services, "on", node_ip
+
