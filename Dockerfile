@@ -14,9 +14,9 @@ RUN apt-get install -y curl dnsmasq openssh-server inetutils-ping telnet net-too
 
 # Adding webupd8team ppa
 RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu precise main\ndeb-src http://ppa.launchpad.net/webupd8team/java/ubuntu precise main" >>  /etc/apt/sources.list
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv EEA14886
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EEA14886
 
-RUN apt-get update
+RUN apt-key update && apt-get update
 
 # Install Java 6
 RUN echo oracle-java6-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections

@@ -84,7 +84,7 @@ class Cluster(object):
             try:
                 # Create and run docker
                 res = self.docker.create_container(node['image'], hostname=node['hostname'], dns=['127.0.0.1'], detach=True)
-                container_id = res['Id']
+                container_id = res['Id'][:12]
                 self.docker.start(container_id)
 
                 # Sleeping 1 sec before setting ip
