@@ -4,3 +4,4 @@ hadoop
 *.pyc
 *.db
 .DS_STORE
+hadoop-*
