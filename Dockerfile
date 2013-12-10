@@ -47,10 +47,8 @@ RUN chown -R hduser:hadoop /home/hduser/.ssh/
 ADD hadoop-conf /usr/local/hadoop-conf
 ADD hadoop /usr/local/hadoop
 RUN cp /usr/local/hadoop-conf/* /usr/local/hadoop/conf
-RUN rm -rf /usr/local/hadoop-conf/
-RUN chown -R hduser:hadoop /usr/local/hadoop
-RUN mkdir -p /var/local/hadoop/
-RUN chown -R hduser:hadoop /var/local/hadoop/
+RUN rm -rf /usr/local/hadoop-conf/ && chown -R hduser:hadoop /usr/local/hadoop
+RUN mkdir -p /var/local/hadoop/ && chown -R hduser:hadoop /var/local/hadoop/
 
 # Environment variables
 # ENV HADOOP_PREFIX /usr/local/hadoop
@@ -58,9 +56,13 @@ RUN chown -R hduser:hadoop /var/local/hadoop/
 # ENV PATH $HADOOP_PREFIX/bin:$PATH
 
 # Hadoop temp dir
-RUN mkdir -p /app/hadoop/tmp
-RUN chown hduser:hadoop /app/hadoop/tmp
-RUN chmod 750 /app/hadoop/tmp
+RUN mkdir -p /app/hadoop/tmp && chown hduser:hadoop /app/hadoop/tmp && chmod 750 /app/hadoop/tmp
+
+# Downloading Zookeeper
+RUN mkdir -p /var/run/zookeeper && echo "1" > /var/run/zookeeper/myid && chown -R hduser:hadoop /var/run/zookeeper
+RUN curl http://mirror.sdunix.com/apache/zookeeper/zookeeper-3.4.5/zookeeper-3.4.5.tar.gz -o /usr/local/zookeeper.tar.gz
+RUN tar -xzf /usr/local/zookeeper.tar.gz -C /usr/local && mv /usr/local/zookeeper-3.4.5 /usr/local/zookeeper && chown -R hduser:hadoop /usr/local/zookeeper && rm /usr/local/zookeeper.tar.gz && chmod +x /usr/local/zookeeper/bin/zkServer.sh
+ADD conf/zoo.cfg /usr/local/zookeeper/conf/zoo.cfg
 
 # Adding cluster hosts file (we need dnsmasq because /etc/hosts in read-only)
 RUN echo 'listen-address=127.0.0.1\nresolv-file=/etc/resolv.dnsmasq.conf\conf-dir=/etc/dnsmasq.d\addn-hosts=/etc/dnsmasq.d/0hosts' >> /etc/dnsmasq.conf
@@ -68,4 +70,4 @@ ADD conf/0hosts /etc/dnsmasq.d/
 # Google DNS
 RUN echo 'nameserver 8.8.8.8\nnameserver 8.8.4.4' >> /etc/resolv.dnsmasq.conf
 
-CMD /etc/init.d/dnsmasq start; /usr/sbin/sshd -D
+CMD export JAVA_OPTS='-Djava.net.preferIPv4Stack=true'; /etc/init.d/dnsmasq start; /usr/sbin/sshd -D

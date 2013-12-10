@@ -80,7 +80,7 @@ class Cluster(object):
 
         self.check_valid_cluster(cluster) # Raises InvalidCluster
 
-        for node in cluster:
+        for pos, node in enumerate(cluster):
             try:
                 # Create and run docker
                 res = self.docker.create_container(node['image'], hostname=node['hostname'], dns=['127.0.0.1'], detach=True)
@@ -103,7 +103,7 @@ class Cluster(object):
                     # Set the host_ip as the last IP in the subnet used.
                     self.host_ip = self.set_host_ip(node['ip'])
 
-                thr = Thread(target = self.start_service, args = [container_id, node['ip'], node['services']])
+                thr = Thread(target = self.start_service, args = [container_id, node['ip'], node['services'], pos + 1])
                 thr.start()
 
                 # Yielding
@@ -202,21 +202,28 @@ class Cluster(object):
         assert res.status_code == 0
         return host_ip
 
-    def start_service(self, container_id, node_ip, services):
+    def start_service(self, container_id, node_ip, services, zookeeper_id):
         """
         Start services (list) in node_ip using SSH.
         """
+        command = 'ssh hduser@' + node_ip + ' -i ../keys/master -o StrictHostKeyChecking=no '
+
         # Sleep 1 seconds before starting.
         time.sleep(4)
+        print "Starting ZooKeeper on", node_ip
+        zookeeper_command = command + "export JAVA_OPTS='-Djava.net.preferIPv4Stack=true' && echo " + str(zookeeper_id) + " > /var/run/zookeeper/myid && /usr/local/zookeeper/bin/zkServer.sh start"
+        res = envoy.run(zookeeper_command)
+        assert res.status_code == 0
+        time.sleep(5)
+
         print "Starting services:", services, "on", node_ip
-        command = 'ssh hduser@' + node_ip + ' -i ../keys/master -o StrictHostKeyChecking=no /usr/local/hadoop/bin/'
         for service in services:
             if service == 'NAMENODE':
-                run_command = command + 'hadoop namenode -format'
+                run_command = command + '/usr/local/hadoop/bin/hadoop namenode -format'
                 res = envoy.run(run_command)
                 assert res.status_code == 0
 
-            run_command = command + 'hadoop-daemon.sh start ' + service.lower()
+            run_command = command + '/usr/local/hadoop/bin/hadoop-daemon.sh start ' + service.lower()
             res = envoy.run(run_command)
             if res.status_code != 0:
                 print "Error starting:", node_ip
@@ -226,5 +233,5 @@ class Cluster(object):
             assert res.status_code == 0
 
         self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
-        print "Started services:", services, "on", node_ip
+        print "Started services:", ', '.join(services).lower(), "and ZooKeeper on", node_ip
 
