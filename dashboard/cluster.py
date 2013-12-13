@@ -233,5 +233,5 @@ class Cluster(object):
             assert res.status_code == 0
 
         self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
-        print "Started services:", ', '.join(services).lower(), "and ZooKeeper on", node_ip
+        print "Started services:", ', '.join(services).lower(), "and zooKeeper on", node_ip
 
