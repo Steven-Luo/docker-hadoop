@@ -85,7 +85,7 @@ You can start the dashboard by doing
 
 ```
 $ cd dashboard
-$ pip install -f requirements.txt
+$ pip install -r requirements.txt
 $ python run_app.py
 ```
 
