@@ -124,13 +124,15 @@
         <p class="lead">No cluster running. Start a cluster.</p>
         <div class="col-md-10">
             <form class="form-inline" role="form" action="/" method="POST" id="new-cluster-form">
-                <button type="button" class="btn btn-default" id="add-node">
-                    <span class="glyphicon glyphicon-plus-sign"></span> Add node
-                </button>
-                <button type="button" class="btn btn-default" id="remove-node">
-                    <span class="glyphicon glyphicon-minus-sign"></span> Remove node
-                </button>
-                <button type="submit" class="btn btn-default">Start cluster</button>
+                <div class="row form-row">
+                    <button type="button" class="btn btn-default" id="add-node">
+                        <span class="glyphicon glyphicon-plus-sign"></span> Add node
+                    </button>
+                    <button type="button" class="btn btn-default" id="remove-node">
+                        <span class="glyphicon glyphicon-minus-sign"></span> Remove node
+                    </button>
+                    <button type="submit" class="btn btn-default">Start cluster</button>
+                </div>
                 {% for rownum in range(1,6) %}
                 <div class="row form-row">
                         <input type="hidden" class="reference-num" value="{{rownum}}" />
