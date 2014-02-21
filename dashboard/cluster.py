@@ -96,7 +96,7 @@ class Cluster(object):
                 assert res.status_code == 0
 
                 # Adding to DB
-                node_table.insert(dict(container_id=container_id, image=node['image'], hostname=node['hostname'], ip=node['ip'], services=','.join(node['services']), created_date=times.now(), status='starting'))
+                node_table.insert(dict(container_id=container_id, image=node['image'], hostname=node['hostname'], ip=node['ip'], services=','.join(node['services']), created_date=times.format(times.now(), 'UTC'), status='starting'))
 
                 # Setting host if not already
                 if self.host_ip is None:

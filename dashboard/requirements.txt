@@ -1,6 +1,5 @@
 docker-py
-Flask
-envoy
-dataset
-times
-iptools
+Flask==0.10.1
+envoy==0.0.2
+times==0.6.2
+iptools==0.6.1
