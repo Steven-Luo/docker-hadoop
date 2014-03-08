@@ -65,7 +65,7 @@ RUN tar -xzf /usr/local/zookeeper.tar.gz -C /usr/local && mv /usr/local/zookeepe
 ADD conf/zoo.cfg /usr/local/zookeeper/conf/zoo.cfg
 
 # Adding cluster hosts file (we need dnsmasq because /etc/hosts in read-only)
-RUN echo 'listen-address=127.0.0.1\nresolv-file=/etc/resolv.dnsmasq.conf\conf-dir=/etc/dnsmasq.d\addn-hosts=/etc/dnsmasq.d/0hosts' >> /etc/dnsmasq.conf
+RUN echo 'listen-address=127.0.0.1\nresolv-file=/etc/resolv.dnsmasq.conf\nconf-dir=/etc/dnsmasq.d\naddn-hosts=/etc/dnsmasq.d/0hosts\n' >> /etc/dnsmasq.conf
 ADD conf/0hosts /etc/dnsmasq.d/
 # Google DNS
 RUN echo 'nameserver 8.8.8.8\nnameserver 8.8.4.4' >> /etc/resolv.dnsmasq.conf
