@@ -3,3 +3,6 @@ Flask==0.10.1
 envoy==0.0.2
 times==0.6.2
 iptools==0.6.1
+SQLAlchemy==0.8.4
+dataset==0.3.15
+
