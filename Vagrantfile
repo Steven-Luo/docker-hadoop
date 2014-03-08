@@ -44,6 +44,12 @@ Vagrant.configure("2") do |config|
     # Install pip
     install_pip               = "curl --silent --show-error --retry 5 https://raw.github.com/pypa/pip/master/contrib/get-pip.py | sudo python2.7;"
 
+    # Install Hadoop dependencies
+    hadoop_deps               = "apt-get -y install openjdk-6-jdk maven build-essential autoconf automake libtool cmake zlib1g-dev pkg-config libssl-dev;"
+
+    # Set JAVA_HOME
+    set_java_home             = "export JAVA_HOME=/usr/lib/jvm/java-6-openjdk-amd64;"
+
     # Put it all together,
     icmd = "#{apt_update} "\
            "#{aufs_supp} "\
@@ -52,11 +58,11 @@ Vagrant.configure("2") do |config|
            "#{apt_update} "\
            "#{install_docker}"\
            "#{install_setuptools}"\
-           "#{install_pip}"
+           "#{install_pip}"\
+           "#{hadoop_deps}"\
+           "#{set_java_home}"
 
     # And run it.
     config.vm.provision :shell, :inline => icmd
   end
 end
-
-#hola
