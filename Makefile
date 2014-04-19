@@ -8,7 +8,7 @@ pipework:
 	sudo /etc/init.d/procps restart >/dev/null
 
 hadoop-container:
-	sudo docker build -t "vierja/hadoop" .
+	sudo docker build -t "vierja/hadoop" docker/
 
 start-cluster:
 	./bin/start-cluster.sh

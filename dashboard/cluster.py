@@ -4,6 +4,7 @@ import dataset
 import times
 import time
 import iptools
+import sys, traceback
 from threading import Thread
 
 
@@ -22,16 +23,19 @@ class Cluster(object):
         self.version = version
         self.db_name = db_name
 
-        self.docker = _docker.Client(base_url='unix://var/run/docker.sock', version='0.6.5')
-        self.db = dataset.connect('sqlite:///' + db_name)
+        self.docker = _docker.Client(base_url=self.base_url, version=self.version)
+        self.db = dataset.connect('sqlite:///' + self.db_name)
 
         self.host_ip = None
 
     def list_cluster(self):
         running_docker = self.docker.containers(quiet=False, all=False, trunc=True, latest=False, since=None, before=None, limit=-1)
+        print "Running dockers: " + str(running_docker)
+        print "Running dockers 2: " + str(self.docker.containers())
         nodes = []
 
         for running in running_docker:
+            print "Finding running docker with Id: " + str(running['Id'][:12])
             node = self.db['node'].find_one(container_id=running['Id'][:12])
             if node is not None:
                 running['ip'] = node['ip']
@@ -83,17 +87,26 @@ class Cluster(object):
         for pos, node in enumerate(cluster):
             try:
                 # Create and run docker
-                res = self.docker.create_container(node['image'], hostname=node['hostname'], dns=['127.0.0.1'], detach=True)
+                res = self.docker.create_container(node['image'], hostname=node['hostname'], dns=['127.0.0.1'], volumes=['/usr/local/hadoop'], detach=True)
+                print "Created container", res['Id']
                 container_id = res['Id'][:12]
-                self.docker.start(container_id)
+                result = self.docker.start(res['Id'], binds={
+                    '/vagrant/hadoop': '/usr/local/hadoop'
+                })
+
+                print result
 
                 # Sleeping 1 sec before setting ip
-                #time.sleep(1)
+                time.sleep(1)
 
                 # Setting IP
                 command = 'sudo ./bin/pipework br1 ' + container_id + ' "' + node['ip'] + '/24"'
                 res = envoy.run(command)
-                assert res.status_code == 0
+                if res.status_code != 0:
+                    print "Error with command: '" + command + "'"
+                    print res.std_out
+                    print res.std_err
+                    assert False
 
                 # Adding to DB
                 node_table.insert(dict(container_id=container_id, image=node['image'], hostname=node['hostname'], ip=node['ip'], services=','.join(node['services']), created_date=times.format(times.now(), 'UTC'), status='starting'))
@@ -111,6 +124,7 @@ class Cluster(object):
 
             except Exception as e:
                 print "Failed to start the cluster.", e
+                traceback.print_exc()
                 self.stop_cluster()
                 break
 
@@ -206,14 +220,17 @@ class Cluster(object):
         """
         Start services (list) in node_ip using SSH.
         """
-        command = 'ssh hduser@' + node_ip + ' -i ../keys/master -o StrictHostKeyChecking=no '
+        command = 'ssh hduser@' + node_ip + ' -i ../docker/keys/master -o StrictHostKeyChecking=no '
 
         # Sleep 1 seconds before starting.
         time.sleep(4)
         print "Starting ZooKeeper on", node_ip
         zookeeper_command = command + "export JAVA_OPTS='-Djava.net.preferIPv4Stack=true' && echo " + str(zookeeper_id) + " > /var/run/zookeeper/myid && /usr/local/zookeeper/bin/zkServer.sh start"
         res = envoy.run(zookeeper_command)
-        assert res.status_code == 0
+        if res.status_code != 0:
+            print "Error starting zookeeper:", node_ip
+            print res.std_out
+            print res.std_err
         time.sleep(5)
 
         print "Starting services:", services, "on", node_ip

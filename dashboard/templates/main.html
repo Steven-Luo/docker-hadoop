@@ -50,13 +50,13 @@
                                 <td>{{node.services}}</td>
                                 <td>{{node.node_status}}</td>
                                 <td>
-                                    <a href="#">
-                                        <span class="glyphicon glyphicon-pause"></span>
+                                    <a href="#" id="stop-container">
+                                        <span data-container-id="{{node.Id[:12]}}" class="glyphicon glyphicon-pause"></span>
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="#">
-                                        <span class="glyphicon glyphicon-stop"></span>
+                                    <a href="#" id="kill-container">
+                                        <span data-container-id="{{node.Id[:12]}}" class="glyphicon glyphicon-stop"></span>
                                     </a>
                                 </td>
                             </tr>
@@ -115,6 +115,24 @@
             $("#stop-cluster").on("click", function(){
                 $.post("/stop-cluster", function(data) {
                     console.log("Cluster stopped.");
+                    location.reload();
+                });
+                return false;
+            });
+
+            $("#stop-container").on("click", function(event) {
+                var containerId = $(event.target).data("containerId");
+                $.post("/container/" + containerId + "/stop", function(data) {
+                    console.log("Container", containerId, " stopped.");
+                    location.reload();
+                });
+                return false;
+            });
+
+            $("#kill-container").on("click", function(event) {
+                var containerId = $(event.target).data("containerId");
+                $.post("/container/" + containerId + "/kill", function(data) {
+                    console.log("Container", containerId, " stopped.");
                     location.reload();
                 });
                 return false;

@@ -14,8 +14,8 @@ dashboard_app = Blueprint('dashboard_app', __name__,
 @dashboard_app.before_app_first_request
 def setup_cluster():
     docker_url = 'unix://var/run/docker.sock'
-    docker_version = '0.6.5'
-    db_name = 'cluster.db'
+    docker_version = '1.10'
+    db_name = 'db_cluster.db'
     if current_app.config.get('DOCKER_URL'):
         docker_url = current_app.config.get('DOCKER_URL')
     if current_app.config.get('DOCKER_VERSION'):
@@ -23,7 +23,6 @@ def setup_cluster():
     if current_app.config.get('DB_NAME'):
         db_name = current_app.config.get('DB_NAME')
     try:
-        #current_app.docker_conn = docker.Client(base_url=docker_url, version=docker_version)
         current_app.cluster = Cluster(docker_url, docker_version, db_name)
     except Exception as e:
         print e
@@ -63,6 +62,8 @@ def overview():
 
         for node_started in current_app.cluster.start_cluster(cluster):
             print 'NODE STARTED: ', node_started
+
+        return redirect("/")
 
     running = current_app.cluster.list_cluster()
     return render_template('main.html', running=running)
