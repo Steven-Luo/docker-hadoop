@@ -30,12 +30,9 @@ class Cluster(object):
 
     def list_cluster(self):
         running_docker = self.docker.containers(quiet=False, all=False, trunc=True, latest=False, since=None, before=None, limit=-1)
-        print "Running dockers: " + str(running_docker)
-        print "Running dockers 2: " + str(self.docker.containers())
         nodes = []
 
         for running in running_docker:
-            print "Finding running docker with Id: " + str(running['Id'][:12])
             node = self.db['node'].find_one(container_id=running['Id'][:12])
             if node is not None:
                 running['ip'] = node['ip']
@@ -93,8 +90,6 @@ class Cluster(object):
                 result = self.docker.start(res['Id'], binds={
                     '/vagrant/hadoop': '/usr/local/hadoop'
                 })
-
-                print result
 
                 # Sleeping 1 sec before setting ip
                 time.sleep(1)

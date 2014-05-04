@@ -9,7 +9,10 @@
     <link href="/static/css/dashboard.css" rel="stylesheet" media="screen">
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="/static/js/lib/jquery.js"></script>
+    <script src="/static/js/lib/angular.min.js"></script>
+    <script src="/static/js/lib/ui-bootstrap-tpls.min.js"></script>
+    <script src="/static/js/lib/lodash.min.js"></script>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -23,10 +26,9 @@
       {% block content %}{% endblock %}
     </div>
 
-
     <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="/static/js/bootstrap-select.min.js"></script>
-    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/lib/bootstrap-select.min.js"></script>
+    <script src="/static/js/lib/bootstrap.min.js"></script>
 
     <script type="text/javascript">
       $('.selectpicker').selectpicker();

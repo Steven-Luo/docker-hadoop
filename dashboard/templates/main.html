@@ -1,10 +1,17 @@
 {% extends "base.html" %} {% block content %}
+{% raw %}
+<script src="/static/js/main.js"></script>
+<div ng-app="dashboardApp">
 <div class="page-header">
-    <h1>Docker Hadoop - Dashboard</h1>
-    <p class="lead">Basic overview of Hadoop cluster.</p>
+    <h2>Docker Hadoop</h2>
 </div>
-<div class="row">
-    {% if running %}
+<div class="row" ng-controller="MainCtrl" data-ng-init="init()">
+     <div class="notification-top" ng-cloak>
+        <div class="notification {{notification.type}}" style="display: none;">
+            {{notification.msg}}
+        </div>
+    </div>
+    <div ng-show="cluster.length > 0">
         <div class="col-md-8">
             <div class="row">
                 <div class="btn-group pull-right">
@@ -14,7 +21,7 @@
                         <span class="sr-only">Toggle Dropdown</span>
                     </button>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="#" id="stop-cluster">Are you sure?</a></li>
+                        <li><a href="#" id="stop-cluster" ng-click="stopCluster()">Are you sure?</a></li>
                     </ul>
                 </div>
             </div>
@@ -37,33 +44,51 @@
                             <th>Status</th>
                             <th></th>
                         </tr>
-                        {% for node in running %}
-                            <tr>
-                                <td>
-                                    <input type="checkbox">
-                                </td>
-                                <td>{{loop.index0}}</td>
-                                <td><a href="/container/{{node.Id[:12]}}">{{node.Id[:12]}}</a>
-                                </td>
-                                <td>{{node.Image}}</td>
-                                <td>{{node.ip}}</td>
-                                <td>{{node.services}}</td>
-                                <td>{{node.node_status}}</td>
-                                <td>
-                                    <a href="#" id="stop-container">
-                                        <span data-container-id="{{node.Id[:12]}}" class="glyphicon glyphicon-pause"></span>
-                                    </a>
-                                </td>
-                                <td>
-                                    <a href="#" id="kill-container">
-                                        <span data-container-id="{{node.Id[:12]}}" class="glyphicon glyphicon-stop"></span>
-                                    </a>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                        <tr ng-repeat="node in cluster">
+                            <td>
+                                <input type="checkbox">
+                            </td>
+                            <td>{{$index}}</td>
+                            <td><a ng-click="selectNode(node.Id.substring(0,12))" href="javascript:void(0)">{{node.Id.substring(0,12)}}</a>
+                            </td>
+                            <td>{{node.Image}}</td>
+                            <td>{{node.ip}}</td>
+                            <td>{{node.services}}</td>
+                            <td><span ng-bind="node.node_status" ng-class="{running: 'text-success', starting: 'text-warning'}[node.node_status]"></span></td>
+                            <td>
+                                <span style="cursor:pointer;" ng-click="stopContainer(node.Id.substring(0,12))" class="glyphicon glyphicon-stop"></span>
+                            </td>
+                        </tr>
                     </table>
                 </div>
             </div>
+            <div class="row" ng-show="selectedNode">
+                <h3>{{selectedNode.Config.Hostname}} <small>({{selectedNode.ID.substring(0,12)}})</small></h3>
+            <div class="col-md-8">
+                <ul>
+                    <li>Created: {{selectedNode.Created}}</li>
+                    <li>IP: {{selectedNode.ip}}</li>
+                    <li>Services: {{selectedNode.services}}</li>
+                    <li>Image: {{selectedNode.Config.Image}}</li>
+                    <li>ImageId: {{selectedNode.Image}}</li>
+                    <li>Hostname: {{selectedNode.Config.Hostname}}</li>
+                    <li>State:
+                        <ul>
+                            <li>Ghost: {{selectedNode.State.Ghost}}</li>
+                            <li>PID: {{selectedNode.State.Pid}}</li>
+                            <li>Running: {{selectedNode.State.Running}}</li>
+                            <li ng-show="!selectedNode.State.Running">Finished: {{selectedNode.State.FinishedAt}}</li>
+                            <li>Started: {{selectedNode.State.StartedAt}}</li>
+                        </ul>
+                    </li>
+                    <li>Env variables:
+                        <ul>
+                            <li ng-repeat="variable in selectedNode.Config.Env">{{variable}}</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
         </div>
         <div class="col-md-4">
             <form role="form">
@@ -111,109 +136,44 @@
             <button type="submit" class="btn btn-default">Start</button>
             </form>
         </div>
-        <script type="text/javascript">
-            $("#stop-cluster").on("click", function(){
-                $.post("/stop-cluster", function(data) {
-                    console.log("Cluster stopped.");
-                    location.reload();
-                });
-                return false;
-            });
-
-            $("#stop-container").on("click", function(event) {
-                var containerId = $(event.target).data("containerId");
-                $.post("/container/" + containerId + "/stop", function(data) {
-                    console.log("Container", containerId, " stopped.");
-                    location.reload();
-                });
-                return false;
-            });
-
-            $("#kill-container").on("click", function(event) {
-                var containerId = $(event.target).data("containerId");
-                $.post("/container/" + containerId + "/kill", function(data) {
-                    console.log("Container", containerId, " stopped.");
-                    location.reload();
-                });
-                return false;
-            });
-        </script>
-    {% else %}
-        <p class="lead">No cluster running. Start a cluster.</p>
+    </div>
+    <div ng-show="cluster.length == 0">
+        <p class="lead">No cluster active. Start a cluster.</p>
         <div class="col-md-10">
             <form class="form-inline" role="form" action="/" method="POST" id="new-cluster-form">
                 <div class="row form-row">
-                    <button type="button" class="btn btn-default" id="add-node">
+                    <button type="button" class="btn btn-default" ng-click="newRow()">
                         <span class="glyphicon glyphicon-plus-sign"></span> Add node
                     </button>
-                    <button type="button" class="btn btn-default" id="remove-node">
+                    <button type="button" class="btn btn-default" ng-click="delLastRow()">
                         <span class="glyphicon glyphicon-minus-sign"></span> Remove node
                     </button>
-                    <button type="submit" class="btn btn-default">Start cluster</button>
+                    <button type="button" ng-click="startCluster()" class="btn btn-default">Start cluster</button>
                 </div>
-                {% for rownum in range(1,6) %}
-                <div class="row form-row">
-                        <input type="hidden" class="reference-num" value="{{rownum}}" />
+                <div class="row form-row" ng-repeat="newNode in newCluster">
                         <div class="form-group">
-                            <select class="selectpicker" name="image[{{rownum}}]">
-                                <option selected>vierja/hadoop</option>
-                            </select>
+                            <select ng-select-picker ng-model="newNode.image" ng-options="image for image in possibleImages"></select>
                         </div>
                         <div class="form-group">
-                            <input type="text" name="host[{{rownum}}]" class="form-control" placeholder="hadoop{{rownum}}" value="hadoop{{rownum}}">
+                            <input type="text" class="form-control" ng-model="newNode.hostname">
                         </div>
                         <div class="form-group">
-                            <input type="text" name="ip[{{rownum}}]" class="form-control" placeholder="10.0.10.{{rownum}}" value="10.0.10.{{rownum}}">
+                            <input type="text" class="form-control" ng-model="newNode.ip">
                         </div>
                         <div class="checkbox">
-                            <select class="selectpicker" name="services[{{rownum}}]" multiple data-selected-text-format="count>3">
-                                <option value="JOBTRACKER" {{'selected' if rownum == 1}}>JobTracker</option>
-                                <option value="NAMENODE" {{'selected' if rownum == 2}}>NameNode</option>
-                                <option value="SECONDARYNAMENODE" {{'selected' if rownum == 3}}>Secondary NameNode</option>
-                                <option value="TASKTRACKER" {{'selected' if rownum > 3}}>TaskTracker</option>
-                                <option value="DATANODE" {{'selected' if rownum > 3}}>DataNode</option>
+                            <select ng-select-picker multiple data-selected-text-format="count>3" ng-model="newNode.services">
+                                <option value="JOBTRACKER" ng-selected="$index == 0">JobTracker</option>
+                                <option value="NAMENODE" ng-selected="$index == 1">NameNode</option>
+                                <option value="SECONDARYNAMENODE" ng-selected="$index == 2">Secondary NameNode</option>
+                                <option value="TASKTRACKER" ng-selected="$index == 3">TaskTracker</option>
+                                <option value="DATANODE" ng-selected="$index == 4">DataNode</option>
                             </select>
                         </div>
                 </div>
-                {% endfor %}
             </form>
         </div>
-        <script type="text/javascript">
-            $("#remove-node").on("click", function(){
-                $("#new-cluster-form>.form-row:last").remove();
-                return false;
-            });
-
-            $("#add-node").on("click", function(){
-                $("#new-cluster-form>.form-row:last").clone().appendTo($("#new-cluster-form"));
-                var last_row = $("#new-cluster-form>.form-row:last");
-                var new_num = parseInt(last_row.find(".reference-num").val()) + 1;
-                last_row.find(".reference-num").val(new_num);
-
-                var fix_field = function(index) {
-                    var j_obj = $(this);
-                    var name_attr = j_obj.attr("name");
-                    if (name_attr) {
-                        j_obj.attr("name", name_attr.replace(/\[\d+\]/g, "[" + new_num + "]"));
-                        if (name_attr.search("ip") != -1) {
-                            var value_attr = j_obj.attr("value");
-                            value_attr = value_attr.replace(/\.\d+$/, "." + new_num);
-                            j_obj.attr("value", value_attr);
-                            j_obj.attr("placeholder", value_attr);
-                        }
-                        if (name_attr.search("host") != -1) {
-                            var value_attr = j_obj.attr("value");
-                            value_attr = value_attr.replace(/\d+$/, "" + new_num);
-                            j_obj.attr("value", value_attr);
-                            j_obj.attr("placeholder", value_attr);
-                        }
-                    }
-                }
-                last_row.find("select").each(fix_field);
-                last_row.find("input").each(fix_field);
-                return false;
-            });
-        </script>
-    {% endif %}
+    </div>
 </div>
+</div>
+{% endraw %}
 {% endblock %}

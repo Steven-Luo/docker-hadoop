@@ -4,6 +4,7 @@ from flask import render_template, jsonify, redirect, url_for
 from functools import wraps
 import docker
 from cluster import Cluster
+import json
 
 dashboard_app = Blueprint('dashboard_app', __name__,
         template_folder='templates',
@@ -68,10 +69,28 @@ def overview():
     running = current_app.cluster.list_cluster()
     return render_template('main.html', running=running)
 
+@dashboard_app.route('/json/cluster')
+def get_cluster():
+    cluster = current_app.cluster.list_cluster()
+    return jsonify({"nodes": cluster})
+
+@dashboard_app.route('/json/start-cluster', methods=['POST'])
+def start_cluster():
+    cluster = json.loads(request.data)
+    nodes_started = 0
+    for node_started in current_app.cluster.start_cluster(cluster):
+        nodes_started += 1
+    return jsonify({"nodes_started": nodes_started})
+
 @dashboard_app.route('/stop-cluster', methods=['POST'])
 def stop_cluster():
     current_app.cluster.stop_cluster()
     return jsonify(dict(response='Cluster killed', status=200))
+
+@dashboard_app.route('/json/container/<container_id>')
+def inspect_json(container_id):
+    container = current_app.cluster.container_detail(container_id)
+    return jsonify(container)
 
 @dashboard_app.route('/container/<container_id>')
 def inspect(container_id):
@@ -81,6 +100,7 @@ def inspect(container_id):
 @dashboard_app.route('/container/<container_id>/stop', methods=['POST'])
 def stop(container_id):
     try:
+        print "Stopping container " + container_id
         resp = current_app.cluster.stop_container(container_id)
         return jsonify(dict(response='Container %s stopped' % container_id, status=200))
     except docker.APIError as e:
@@ -90,6 +110,7 @@ def stop(container_id):
 @dashboard_app.route('/container/<container_id>/kill', methods=['POST'])
 def kill(container_id):
     try:
+        print "Killing container " + container_id
         resp = current_app.cluster.kill_container(container_id)
         return jsonify(dict(response='Container %s killed' % container_id, status=200))
     except docker.APIError as e:

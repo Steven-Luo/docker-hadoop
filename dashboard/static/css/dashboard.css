@@ -1,3 +1,43 @@
 .form-row {
     margin-bottom: 10px;
 }
+
+.notification-top {
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    top: 0px;
+}
+
+.notification {
+    position: relative;
+    left: -50%;
+    padding: 5px 15px;
+    border-radius: 10px;
+    -webkit-border-radius: 2px;
+    -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    display: inline-block;
+}
+
+.notification.warning {
+    border-color: #F0C36D;
+    background-color: #F9EDBE;
+    display: block !important;
+}
+
+.notification.error {
+    border-color: #DD5757;
+    background-color:#F9BEBE;
+    display: block !important;
+}
+
+.notification.success {
+    border-color: #96E696;
+    background-color: #96E696;
+    display: block !important;
+}
+
+.page-header {
+    margin-top: 0;
+}
