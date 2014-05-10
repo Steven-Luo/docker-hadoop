@@ -55,17 +55,19 @@ class Cluster(object):
         self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
         return resp
 
+    # Stop a running container (Send SIGTERM, and then SIGKILL after grace period)
     def stop_container(self, container_id):
-        resp = self.docker.stop(container_id, timeout=5)
+        resp = self.docker.kill(container_id, timeout=5)
         self.db['node'].update(dict(container_id=container_id, status='stopped'), ['container_id'])
         return resp
 
+    # Kill a running container (send SIGKILL, or specified signal)
     def kill_container(self, container_id):
         resp = self.docker.kill(container_id)
         self.db['node'].delete(container_id=container_id)
         return resp
 
-    def stop_cluster(self):
+    def kill_cluster(self):
         for node in self.db['node']:
             resp = self.docker.kill(node['container_id'])
 
@@ -120,7 +122,7 @@ class Cluster(object):
             except Exception as e:
                 print "Failed to start the cluster.", e
                 traceback.print_exc()
-                self.stop_cluster()
+                self.kill_cluster()
                 break
 
     def check_valid_cluster(self, cluster):

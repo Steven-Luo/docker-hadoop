@@ -8,8 +8,7 @@ import json
 
 dashboard_app = Blueprint('dashboard_app', __name__,
         template_folder='templates',
-        static_folder='static',
-        )
+        static_folder='static',)
 
 
 @dashboard_app.before_app_first_request
@@ -28,53 +27,16 @@ def setup_cluster():
     except Exception as e:
         print e
 
-@dashboard_app.route('/', methods=['GET', 'POST'])
+@dashboard_app.route('/', methods=['GET'])
 def overview():
-    if request.method == 'POST':
-        cluster = []
-        hosts = request.form.getlist('host[]')
-        ips = request.form.getlist('ip[]')
-        services = request.form.getlist('services[]')
-        print "hosts:", hosts
-        print "ips:", ips
-        print "services:", services
-
-        count = 1
-        while True:
-            host = request.form.get('host[' + str(count) + ']')
-            if not host:
-                break
-
-            image = request.form.get('image[' + str(count) + ']')
-            ip = request.form.get('ip[' + str(count) + ']')
-            services = request.form.getlist('services[' + str(count) + ']')
-
-            print count, "variables:", image, host, ip, services
-
-            count += 1
-
-            node = {
-                'image': image,
-                'hostname': host,
-                'ip': ip,
-                'services': services
-            }
-            cluster.append(node)
-
-        for node_started in current_app.cluster.start_cluster(cluster):
-            print 'NODE STARTED: ', node_started
-
-        return redirect("/")
-
-    running = current_app.cluster.list_cluster()
-    return render_template('main.html', running=running)
+    return render_template('main.html')
 
 @dashboard_app.route('/json/cluster')
 def get_cluster():
     cluster = current_app.cluster.list_cluster()
     return jsonify({"nodes": cluster})
 
-@dashboard_app.route('/json/start-cluster', methods=['POST'])
+@dashboard_app.route('/json/cluster/start', methods=['POST'])
 def start_cluster():
     cluster = json.loads(request.data)
     nodes_started = 0
@@ -82,9 +44,9 @@ def start_cluster():
         nodes_started += 1
     return jsonify({"nodes_started": nodes_started})
 
-@dashboard_app.route('/stop-cluster', methods=['POST'])
+@dashboard_app.route('/json/cluster/kill', methods=['POST'])
 def stop_cluster():
-    current_app.cluster.stop_cluster()
+    current_app.cluster.kill_cluster()
     return jsonify(dict(response='Cluster killed', status=200))
 
 @dashboard_app.route('/json/container/<container_id>')
@@ -92,27 +54,11 @@ def inspect_json(container_id):
     container = current_app.cluster.container_detail(container_id)
     return jsonify(container)
 
-@dashboard_app.route('/container/<container_id>')
-def inspect(container_id):
-    container = current_app.cluster.container_detail(container_id)
-    return render_template('detail.html', container=container)
-
-@dashboard_app.route('/container/<container_id>/stop', methods=['POST'])
+@dashboard_app.route('/json/container/<container_id>/kill', methods=['POST'])
 def stop(container_id):
     try:
-        print "Stopping container " + container_id
-        resp = current_app.cluster.stop_container(container_id)
-        return jsonify(dict(response='Container %s stopped' % container_id, status=200))
-    except docker.APIError as e:
-        print("Docker APIError: %s" % e)
-        return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404
-
-@dashboard_app.route('/container/<container_id>/kill', methods=['POST'])
-def kill(container_id):
-    try:
-        print "Killing container " + container_id
         resp = current_app.cluster.kill_container(container_id)
-        return jsonify(dict(response='Container %s killed' % container_id, status=200))
+        return jsonify(dict(response='Container %s stopped' % container_id, status=200))
     except docker.APIError as e:
         print("Docker APIError: %s" % e)
         return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404

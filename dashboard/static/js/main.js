@@ -14,11 +14,15 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     $scope.selectedNodeId = undefined;
     $scope.notification = {msg: undefined, type: undefined, timeout: undefined};
 
+    function cleanNotification() {
+        $scope.notification.type = undefined;
+    }
+
     $scope.$watch('notification', function(newNotification) {
         if (newNotification.timeout && newNotification.timeout != -1 && newNotification.timeout != 0) {
             $timeout(function(){
                 if ($scope.notification.msg == newNotification.msg) {
-                    $scope.notification.type = undefined;
+                    cleanNotification();
                 }
             }, newNotification.timeout * 1000);
         }
@@ -32,6 +36,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
         $http.get("/json/cluster").success(function(data) {
             console.log("/json/cluster result:", data);
             $scope.cluster = data.nodes;
+            cleanNotification();
         }).error(function(data) {
             $scope.notification = {msg: "Error getting cluster nodes: " + JSON.stringify(data), type: "error", timeout: 15};
         });
@@ -57,7 +62,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     $scope.stopCluster = function() {
 
         $scope.notification = {msg: "Stopping cluster...", type: "warning"};
-        $http.post("/stop-cluster").success(function(data) {
+        $http.post("/json/cluster/kill").success(function(data) {
             console.log("Stopped cluster. Updating cluster nodes.");
             getCluster();
             $scope.notification = {msg: "Cluster stopped.", type: "success", timeout: 6};
@@ -69,7 +74,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
 
     $scope.stopContainer = function(containerId) {
         $scope.notification = {msg: "Stopping container " + containerId + "...", type: "warning"};
-        $http.post("/container/" + containerId + "/stop").success(function(data) {
+        $http.post("/json/container/" + containerId + "/kill").success(function(data) {
             getCluster();
             $scope.notification = {msg: "Node " + containerId + " stopped.", type: "success", timeout: 6};
         }).error(function(data) {
@@ -160,7 +165,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     $scope.startCluster = function() {
         $scope.notification = {msg: "Starting cluster...", type: "warning"};
         console.log("Start cluster:", $scope.newCluster);
-        $http.post("/json/start-cluster", $scope.newCluster).success(function(data) {
+        $http.post("/json/cluster/start", $scope.newCluster).success(function(data) {
             console.log("start cluster response", data);
             getCluster();
             $scope.notification = {msg: "Cluster with " + data.nodes_started + " nodes started.", type: "success", timeout: 6};
