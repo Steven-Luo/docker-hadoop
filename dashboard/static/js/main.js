@@ -9,7 +9,7 @@ var dashboardApp = angular.module('dashboardApp', ['ui.bootstrap', 'underscore']
 
 dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $timeout, $http, _) {
         
-    $scope.cluster = [];
+    $scope.cluster = undefined;
     $scope.selectedNode = undefined;
     $scope.selectedNodeId = undefined;
     $scope.notification = {msg: undefined, type: undefined, timeout: undefined};
@@ -36,7 +36,6 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
         $http.get("/json/cluster").success(function(data) {
             console.log("/json/cluster result:", data);
             $scope.cluster = data.nodes;
-            cleanNotification();
         }).error(function(data) {
             $scope.notification = {msg: "Error getting cluster nodes: " + JSON.stringify(data), type: "error", timeout: 15};
         });
@@ -64,6 +63,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
         $scope.notification = {msg: "Stopping cluster...", type: "warning"};
         $http.post("/json/cluster/kill").success(function(data) {
             console.log("Stopped cluster. Updating cluster nodes.");
+            $scope.cluster = undefined;
             getCluster();
             $scope.notification = {msg: "Cluster stopped.", type: "success", timeout: 6};
         }).error(function(data) {
@@ -74,12 +74,34 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
 
     $scope.stopContainer = function(containerId) {
         $scope.notification = {msg: "Stopping container " + containerId + "...", type: "warning"};
-        $http.post("/json/container/" + containerId + "/kill").success(function(data) {
+        $http.post("/json/container/" + containerId + "/stop").success(function(data) {
             getCluster();
             $scope.notification = {msg: "Node " + containerId + " stopped.", type: "success", timeout: 6};
         }).error(function(data) {
             console.log("Errow while stopping node", containerId, data);
             $scope.notification = {msg: "Error while stopping node " + containerId + " : " + JSON.stringify(data), type: "error", timeout: 15};
+        })
+    }
+
+    $scope.killContainer = function(containerId) {
+        $scope.notification = {msg: "Killing container " + containerId + "...", type: "warning"};
+        $http.post("/json/container/" + containerId + "/kill").success(function(data) {
+            getCluster();
+            $scope.notification = {msg: "Node " + containerId + " killed.", type: "success", timeout: 6};
+        }).error(function(data) {
+            console.log("Errow while killing node", containerId, data);
+            $scope.notification = {msg: "Error while killing node " + containerId + " : " + JSON.stringify(data), type: "error", timeout: 15};
+        })
+    }
+
+    $scope.startContainer = function(containerId) {
+        $scope.notification = {msg: "Unpausing container " + containerId + "...", type: "warning"};
+        $http.post("/json/container/" + containerId + "/start").success(function(data) {
+            getCluster();
+            $scope.notification = {msg: "Node " + containerId + " started.", type: "success", timeout: 6};
+        }).error(function(data) {
+            console.log("Errow while unpausing node", containerId, data);
+            $scope.notification = {msg: "Error while unpausing node " + containerId + " : " + JSON.stringify(data), type: "error", timeout: 15};
         })
     }
 
@@ -99,6 +121,10 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     function getNodeDetails(nodeId) {
         $http.get("/json/container/" + nodeId).success(function(data) {
             $scope.selectedNode = data;
+            $scope.selectedNode.serviceList = [];
+            $scope.selectedNode.services.split(',').forEach(function(se) {
+                $scope.selectedNode.serviceList.push(se.trim());
+            })
         }).error(function(data) {
             console.log("Errow while ladoing node", nodeId, data);
             $scope.notification = {msg: "Error while loading node " + nodeId + " details: " + JSON.stringify(data), type: "error", timeout: 15};
@@ -167,6 +193,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
         console.log("Start cluster:", $scope.newCluster);
         $http.post("/json/cluster/start", $scope.newCluster).success(function(data) {
             console.log("start cluster response", data);
+            $scope.cluster = undefined;
             getCluster();
             $scope.notification = {msg: "Cluster with " + data.nodes_started + " nodes started.", type: "success", timeout: 6};
         }).error(function(data) {
@@ -183,6 +210,37 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     $scope.delLastRow = function() {
         $scope.newCluster.pop();
     }
+
+    $scope.showLogs = false;
+    $scope.nodeLogs = "";
+    $scope.nodeLogsLastNow = 0;
+    $scope.nodeLogsLines = 1000;
+
+    function loadLogs(containerId, service, lines) {
+        console.log("loadLogs(", containerId, service, lines, ")");
+        if ($scope.showLogs) {
+            $timeout(function(){
+                loadLogs($scope.selectedNode.ID.substring(0,12), $scope.nodeLogsService.toLowerCase(), $scope.nodeLogsLines);
+            }, 200);
+            var now = new Date().getTime();
+            $http.get("/json/container/" + containerId + "/" + service + "/logs?now=" + now).success(function(data) {
+                if ($scope.nodeLogsLastNow < now) {
+                    $scope.nodeLogsLastNow = now;
+                    $scope.nodeLogs = data.logs;
+                }
+            }, function(data) {
+                console.log("Error gettings logs for container", containerId, "and service", service);
+            });
+        }
+    }
+
+    $scope.$watch("showLogs", function() {
+        console.log("Change in showLogs", $scope.showLogs);
+        if ($scope.selectedNode) {
+            console.log("nodeLogsService:", $scope.nodeLogsService);
+            loadLogs($scope.selectedNode.ID.substring(0,12), $scope.nodeLogsService.toLowerCase());
+        }
+    })
 });
 
 

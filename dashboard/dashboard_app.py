@@ -55,11 +55,38 @@ def inspect_json(container_id):
     return jsonify(container)
 
 @dashboard_app.route('/json/container/<container_id>/kill', methods=['POST'])
-def stop(container_id):
+def kill(container_id):
     try:
         resp = current_app.cluster.kill_container(container_id)
+        return jsonify(dict(response='Container %s killed' % container_id, status=200))
+    except docker.APIError as e:
+        print("Docker APIError: %s" % e)
+        return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404
+
+@dashboard_app.route('/json/container/<container_id>/stop', methods=['POST'])
+def stop(container_id):
+    try:
+        resp = current_app.cluster.stop_container(container_id)
         return jsonify(dict(response='Container %s stopped' % container_id, status=200))
     except docker.APIError as e:
         print("Docker APIError: %s" % e)
         return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404
 
+@dashboard_app.route('/json/container/<container_id>/start', methods=['POST'])
+def start(container_id):
+    try:
+        resp = current_app.cluster.start_container(container_id)
+        return jsonify(dict(response='Container %s started' % container_id, status=200))
+    except docker.APIError as e:
+        print("Docker APIError: %s" % e)
+        return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404
+
+@dashboard_app.route('/json/container/<container_id>/<service>/logs', methods=['GET'])
+def get_logs(container_id, service):
+    try:
+        lines = request.args.get('lines', '500')
+        log = current_app.cluster.get_log(container_id, service, lines)
+        return jsonify({"logs": log})
+    except docker.APIError as e:
+        print("Docker APIError: %s" % e)
+        return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404

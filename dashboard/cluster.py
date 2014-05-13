@@ -11,6 +11,9 @@ from threading import Thread
 class InvalidCluster(Exception):
     pass
 
+class InvalidContainer(Exception):
+    pass
+
 
 class Cluster(object):
     """
@@ -29,7 +32,7 @@ class Cluster(object):
         self.host_ip = None
 
     def list_cluster(self):
-        running_docker = self.docker.containers(quiet=False, all=False, trunc=True, latest=False, since=None, before=None, limit=-1)
+        running_docker = self.docker.containers(quiet=False, all=True, trunc=True, latest=False, since=None, before=None, limit=-1)
         nodes = []
 
         for running in running_docker:
@@ -50,14 +53,19 @@ class Cluster(object):
             container['services'] = node['services']
         return container
 
+    # Start a paused container
     def start_container(self, container_id):
-        resp = self.docker.start(container_id)
+        node = self.db['node'].find_one(container_id=container_id)
+        resp = self.docker.start(container_id, binds={
+                    '/vagrant/hadoop': '/usr/local/hadoop',
+                    '/vagrant/tmp/' + node['hostname'] + '-logs': '/var/local/hadoop/logs'
+                })
         self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
         return resp
 
     # Stop a running container (Send SIGTERM, and then SIGKILL after grace period)
     def stop_container(self, container_id):
-        resp = self.docker.kill(container_id, timeout=5)
+        resp = self.docker.stop(container_id)
         self.db['node'].update(dict(container_id=container_id, status='stopped'), ['container_id'])
         return resp
 
@@ -73,7 +81,6 @@ class Cluster(object):
 
         self.db['node'].delete() # Delete all just in case.
 
-
     def start_cluster(self, cluster):
         """
         cluster is a list of a dict like:
@@ -86,11 +93,12 @@ class Cluster(object):
         for pos, node in enumerate(cluster):
             try:
                 # Create and run docker
-                res = self.docker.create_container(node['image'], hostname=node['hostname'], dns=['127.0.0.1'], volumes=['/usr/local/hadoop'], detach=True)
+                res = self.docker.create_container(node['image'], hostname=node['hostname'], dns=['127.0.0.1'], volumes=['/usr/local/hadoop', '/var/local/hadoop/logs'], detach=True)
                 print "Created container", res['Id']
                 container_id = res['Id'][:12]
                 result = self.docker.start(res['Id'], binds={
-                    '/vagrant/hadoop': '/usr/local/hadoop'
+                    '/vagrant/hadoop': '/usr/local/hadoop',
+                    '/vagrant/tmp/' + node['hostname'] + '-logs': '/var/local/hadoop/logs'
                 })
 
                 # Sleeping 1 sec before setting ip
@@ -217,7 +225,7 @@ class Cluster(object):
         """
         Start services (list) in node_ip using SSH.
         """
-        command = 'ssh hduser@' + node_ip + ' -i ../docker/keys/master -o StrictHostKeyChecking=no '
+        command = self.get_ssh(node_ip)
 
         # Sleep 1 seconds before starting.
         time.sleep(4)
@@ -248,4 +256,27 @@ class Cluster(object):
 
         self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
         print "Started services:", ', '.join(services).lower(), "and zooKeeper on", node_ip
+
+    def create_network_conditions(self, container_id, conditions):
+        """
+        Type of network conditions possibles:
+
+        """
+        pass
+
+    def get_ssh(self, node_ip):
+        return 'ssh hduser@' + node_ip + ' -i ../docker/keys/master -o StrictHostKeyChecking=no '
+
+    def get_log(self, container_id, service, num_lines):
+
+        node = self.db['node'].find_one(container_id=container_id)
+        if node is None:
+            raise InvalidContainer("Container does not exists")
+
+        command = "tail -n " + str(num_lines) + " /vagrant/tmp/" + node['hostname'] + "-logs/hadoop-hduser-" + service.lower() + "-" + node['hostname'] + ".log"
+
+        print "Command is " + command
+        res = envoy.run(command)
+        return res.std_out
+
 

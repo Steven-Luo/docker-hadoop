@@ -11,8 +11,11 @@
             {{notification.msg}}
         </div>
     </div>
-    <div ng-show="cluster.length > 0">
-        <div class="col-md-8">
+    <div ng-show="!cluster" ng-cloak>
+        <p class="lead">Loading...</p>
+    </div>
+    <div ng-show="cluster.length > 0" ng-cloak>
+        <div class="col-md-6">
             <div class="row">
                 <div class="btn-group pull-right">
                     <button type="button" class="btn btn-danger">Stop cluster</button>
@@ -31,113 +34,121 @@
                     <div class="panel-heading">
                         Running nodes
                     </div>
-                    <table class="table">
+                    <table class="table table-responsive">
                         <tr>
-                            <th>
-                                <input type="checkbox">
-                            </th>
-                            <th>#</th>
                             <th>Id</th>
                             <th>Image</th>
                             <th>IP</th>
-                            <th>Services</th>
+                            <th style="width:100px">Services</th>
                             <th>Status</th>
                             <th></th>
                         </tr>
-                        <tr ng-repeat="node in cluster">
-                            <td>
-                                <input type="checkbox">
-                            </td>
-                            <td>{{$index}}</td>
+                        <tr ng-repeat="node in cluster" style="font-size:11px;">
                             <td><a ng-click="selectNode(node.Id.substring(0,12))" href="javascript:void(0)">{{node.Id.substring(0,12)}}</a>
                             </td>
                             <td>{{node.Image}}</td>
                             <td>{{node.ip}}</td>
-                            <td>{{node.services}}</td>
-                            <td><span ng-bind="node.node_status" ng-class="{running: 'text-success', starting: 'text-warning'}[node.node_status]"></span></td>
+                            <td style="width:100px;font-size:11px">{{node.services}}</td>
+                            <td><span ng-bind="node.node_status" ng-class="{running: 'text-success', starting: 'text-warning', stopped: 'text-danger'}[node.node_status]"></span></td>
                             <td>
-                                <span style="cursor:pointer;" ng-click="stopContainer(node.Id.substring(0,12))" class="glyphicon glyphicon-stop"></span>
+                                <span style="cursor:pointer;" ng-click="stopContainer(node.Id.substring(0,12))" class="glyphicon glyphicon-pause"></span>
+                                <span style="cursor:pointer;" ng-click="killContainer(node.Id.substring(0,12))" ng-show="node.node_status == 'running'" class="glyphicon glyphicon-stop"></span>
+                                <span style="cursor:pointer;" ng-click="startContainer(node.Id.substring(0,12))" ng-show="node.node_status == 'stopped'" class="glyphicon glyphicon-play"></span>
                             </td>
                         </tr>
                     </table>
                 </div>
             </div>
-            <div class="row" ng-show="selectedNode">
-                <h3>{{selectedNode.Config.Hostname}} <small>({{selectedNode.ID.substring(0,12)}})</small></h3>
-            <div class="col-md-8">
-                <ul>
-                    <li>Created: {{selectedNode.Created}}</li>
-                    <li>IP: {{selectedNode.ip}}</li>
-                    <li>Services: {{selectedNode.services}}</li>
-                    <li>Image: {{selectedNode.Config.Image}}</li>
-                    <li>ImageId: {{selectedNode.Image}}</li>
-                    <li>Hostname: {{selectedNode.Config.Hostname}}</li>
-                    <li>State:
-                        <ul>
-                            <li>Ghost: {{selectedNode.State.Ghost}}</li>
-                            <li>PID: {{selectedNode.State.Pid}}</li>
-                            <li>Running: {{selectedNode.State.Running}}</li>
-                            <li ng-show="!selectedNode.State.Running">Finished: {{selectedNode.State.FinishedAt}}</li>
-                            <li>Started: {{selectedNode.State.StartedAt}}</li>
-                        </ul>
-                    </li>
-                    <li>Env variables:
-                        <ul>
-                            <li ng-repeat="variable in selectedNode.Config.Env">{{variable}}</li>
-                        </ul>
-                    </li>
-                </ul>
+            <div class="row" ng-show="0">
+                <form role="form">
+                    <div class="form-group">
+                        <label for="inputImage">Image</label>
+                        <input type="text" class="form-control" id="inputImage" placeholder="vierja/hadoop">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputHostname">Hostname</label>
+                        <input type="text" class="form-control" id="inputHostname" placeholder="hadoop16">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputIp">IP</label>
+                        <input type="text" class="form-control" id="inputIp" placeholder="10.0.10.16">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Start service</label>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox">JobTracker
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox">NameNode
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox">TaskTracker
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox">DataNode
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox">SecondaryNameNode
+                            </label>
+                        </div>
+                    </div>
+                <button type="submit" class="btn btn-default">Start</button>
+                </form>
             </div>
         </div>
-        </div>
-        <div class="col-md-4">
-            <form role="form">
-                <div class="form-group">
-                    <label for="inputImage">Image</label>
-                    <input type="text" class="form-control" id="inputImage" placeholder="vierja/hadoop">
+        <div class="col-md-6" ng-show="selectedNode">
+            <h3>{{selectedNode.Config.Hostname}} <small>({{selectedNode.ID.substring(0,12)}})</small></h3>
+            <div class="row" style="margin-left:10px">
+                <select ng-model="nodeLogsService" ng-options="service for service in selectedNode.serviceList">
+                </select>
+                <input type="checkbox" ng-model="showLogs"> Show logs
+                <input type="text" ng-model="nodeLogsLines" value="1000">
+                <br><br>
+                <div>
+                <pre ng-show="showLogs" style="height:400px;overflow:scroll;font-size: 10px;margin-bottom:0px">{{nodeLogs}}</pre>
+                <small style="font-size: 9px;color: #757575">Last update {{nodeLogsLastNow | date : 'HH:mm.ss.sss'}}</small>
                 </div>
-                <div class="form-group">
-                    <label for="inputHostname">Hostname</label>
-                    <input type="text" class="form-control" id="inputHostname" placeholder="hadoop16">
+            </div>
+            <div class="row">
+                <div class="col-md-8">
+                    <ul>
+                        <li>Created: {{selectedNode.Created}}</li>
+                        <li>IP: {{selectedNode.ip}}</li>
+                        <li>Services: {{selectedNode.services}}</li>
+                        <li>Image: {{selectedNode.Config.Image}}</li>
+                        <li>ImageId: {{selectedNode.Image}}</li>
+                        <li>Hostname: {{selectedNode.Config.Hostname}}</li>
+                        <li>State:
+                            <ul>
+                                <li>Ghost: {{selectedNode.State.Ghost}}</li>
+                                <li>PID: {{selectedNode.State.Pid}}</li>
+                                <li>Running: {{selectedNode.State.Running}}</li>
+                                <li ng-show="!selectedNode.State.Running">Finished: {{selectedNode.State.FinishedAt}}</li>
+                                <li>Started: {{selectedNode.State.StartedAt}}</li>
+                            </ul>
+                        </li>
+                        <li>Env variables:
+                            <ul>
+                                <li ng-repeat="variable in selectedNode.Config.Env">{{variable}}</li>
+                            </ul>
+                        </li>
+                    </ul>
                 </div>
-                <div class="form-group">
-                    <label for="inputIp">IP</label>
-                    <input type="text" class="form-control" id="inputIp" placeholder="10.0.10.16">
-                </div>
+            </div>
 
-                <div class="form-group">
-                    <label>Start service</label>
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox">JobTracker
-                        </label>
-                    </div>
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox">NameNode
-                        </label>
-                    </div>
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox">TaskTracker
-                        </label>
-                    </div>
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox">DataNode
-                        </label>
-                    </div>
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox">SecondaryNameNode
-                        </label>
-                    </div>
-                </div>
-            <button type="submit" class="btn btn-default">Start</button>
-            </form>
         </div>
     </div>
-    <div ng-show="cluster.length == 0">
+    <div ng-show="cluster.length == 0" ng-cloak>
         <p class="lead">No cluster active. Start a cluster.</p>
         <div class="col-md-10">
             <form class="form-inline" role="form" action="/" method="POST" id="new-cluster-form">
@@ -148,7 +159,7 @@
                     <button type="button" class="btn btn-default" ng-click="delLastRow()">
                         <span class="glyphicon glyphicon-minus-sign"></span> Remove node
                     </button>
-                    <button type="button" ng-click="startCluster()" class="btn btn-default">Start cluster</button>
+                    <button type="button" ng-click="startCluster()" class="btn btn-default"><span class="glyphicon glyphicon-play"></span> Start cluster</button>
                 </div>
                 <div class="row form-row" ng-repeat="newNode in newCluster">
                         <div class="form-group">
