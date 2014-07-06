@@ -10,4 +10,12 @@
     and reduce task.
     </description>
   </property>
+  <property>
+    <name>mapred.zookeeper.nodes</name>
+    <value>hadoop1:2181,hadoop2:2181,hadoop3:2181,hadoop4:2181,hadoop5:2181</value>
+    <description>The host and port that the MapReduce job tracker runs
+    at.  If "local", then jobs are run in-process as a single map
+    and reduce task.
+    </description>
+  </property>
 </configuration>

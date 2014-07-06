@@ -24,7 +24,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes oracle-java6-i
 RUN addgroup hadoop
 RUN adduser --disabled-password --ingroup hadoop --quiet --gecos "" hduser
 
-RUN mkdir -p /home/hduser/.ssh/
+RUN mkdir -p /home/hduser/.ssh/; mkdir -p /root/.ssh/
 
 # Creating hduser keys (for self ssh login)
 RUN ssh-keygen -t rsa -P "" -f /home/hduser/.ssh/id_rsa -C "hduser"
@@ -37,6 +37,7 @@ RUN chmod 0755 /var/run/sshd
 # Import master pub key and append it to authorized_keys for no-password login
 ADD keys/master.pub /home/hduser/.ssh/master.pub
 RUN cat /home/hduser/.ssh/master.pub >> /home/hduser/.ssh/authorized_keys
+RUN cat /home/hduser/.ssh/master.pub >> /root/.ssh/authorized_keys
 
 # Owning .ssh
 RUN chown -R hduser:hadoop /home/hduser/.ssh/
@@ -58,5 +59,7 @@ ADD conf/zoo.cfg /usr/local/zookeeper/conf/zoo.cfg
 ADD conf/hadoop.hosts_2 /tmp/hosts
 RUN mkdir -p -- /lib-override && cp /lib/x86_64-linux-gnu/libnss_files.so.2 /lib-override
 RUN perl -pi -e 's:/etc/hosts:/tmp/hosts:g' /lib/x86_64-linux-gnu/libnss_files.so.2
+
+RUN echo 'root:root' |chpasswd
 
 CMD /usr/sbin/sshd -D

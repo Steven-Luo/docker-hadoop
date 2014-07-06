@@ -3,7 +3,7 @@ from flask import current_app, request
 from flask import render_template, jsonify, redirect, url_for
 from functools import wraps
 import docker
-from cluster import Cluster
+from cluster import Cluster, InvalidContainer
 import json
 
 dashboard_app = Blueprint('dashboard_app', __name__,
@@ -49,6 +49,11 @@ def stop_cluster():
     current_app.cluster.kill_cluster()
     return jsonify(dict(response='Cluster killed', status=200))
 
+@dashboard_app.route('/json/cluster/update_services', methods=['POST'])
+def update_services():
+    current_app.cluster.update_java_services()
+    return jsonify(dict(response='Services updated', status=200))
+
 @dashboard_app.route('/json/container/<container_id>')
 def inspect_json(container_id):
     container = current_app.cluster.container_detail(container_id)
@@ -87,6 +92,8 @@ def get_logs(container_id, service):
         lines = request.args.get('lines', '500')
         log = current_app.cluster.get_log(container_id, service, lines)
         return jsonify({"logs": log})
+    except InvalidContainer as e:
+        print "Invalid container error: %e" % e
     except docker.APIError as e:
         print("Docker APIError: %s" % e)
         return jsonify(dict(response='Container %s not found' % container_id, status=404)), 404

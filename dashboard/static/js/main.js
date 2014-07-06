@@ -221,7 +221,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
         if ($scope.showLogs) {
             $timeout(function(){
                 loadLogs($scope.selectedNode.ID.substring(0,12), $scope.nodeLogsService.toLowerCase(), $scope.nodeLogsLines);
-            }, 200);
+            }, 800);
             var now = new Date().getTime();
             $http.get("/json/container/" + containerId + "/" + service + "/logs?now=" + now).success(function(data) {
                 if ($scope.nodeLogsLastNow < now) {
@@ -241,6 +241,14 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
             loadLogs($scope.selectedNode.ID.substring(0,12), $scope.nodeLogsService.toLowerCase());
         }
     })
+
+    $scope.updateServices = function() {
+        $http.post("/json/cluster/update_services").success(function(data) {
+            getCluster();
+        }).error(function(data) {
+            console.log("Errow while updating services:", data);
+        })
+    }
 });
 
 

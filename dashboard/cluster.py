@@ -59,7 +59,7 @@ class Cluster(object):
         resp = self.docker.start(container_id, binds={
                     '/vagrant/hadoop': '/usr/local/hadoop',
                     '/vagrant/tmp/' + node['hostname'] + '-logs': '/var/local/hadoop/logs'
-                })
+                }, privileged=True)
         self.db['node'].update(dict(container_id=container_id, status='running'), ['container_id'])
         return resp
 
@@ -99,7 +99,7 @@ class Cluster(object):
                 result = self.docker.start(res['Id'], binds={
                     '/vagrant/hadoop': '/usr/local/hadoop',
                     '/vagrant/tmp/' + node['hostname'] + '-logs': '/var/local/hadoop/logs'
-                })
+                }, privileged=True)
 
                 # Sleeping 1 sec before setting ip
                 time.sleep(1)
@@ -225,18 +225,22 @@ class Cluster(object):
         """
         Start services (list) in node_ip using SSH.
         """
-        command = self.get_ssh(node_ip)
+        command = self.get_ssh("hduser", node_ip)
 
         # Sleep 1 seconds before starting.
         time.sleep(4)
-        print "Starting ZooKeeper on", node_ip
-        zookeeper_command = command + "export JAVA_OPTS='-Djava.net.preferIPv4Stack=true' && echo " + str(zookeeper_id) + " > /var/run/zookeeper/myid && /usr/local/zookeeper/bin/zkServer.sh start"
-        res = envoy.run(zookeeper_command)
-        if res.status_code != 0:
-            print "Error starting zookeeper:", node_ip
-            print res.std_out
-            print res.std_err
-        time.sleep(5)
+
+        if zookeeper_id < 6:
+            print "Starting ZooKeeper on", node_ip
+            zookeeper_command = command + "export JAVA_OPTS='-Djava.net.preferIPv4Stack=true' && echo " + str(zookeeper_id) + " > /var/run/zookeeper/myid && /usr/local/zookeeper/bin/zkServer.sh start"
+            res = envoy.run(zookeeper_command)
+            if res.status_code != 0:
+                print "Error starting zookeeper:", node_ip
+                print res.std_out
+                print res.std_err
+            time.sleep(5)
+        else:
+            print "ZooKeeperId is", zookeeper_id, "not starting ZooKeeper service on this node."
 
         print "Starting services:", services, "on", node_ip
         for service in services:
@@ -264,8 +268,8 @@ class Cluster(object):
         """
         pass
 
-    def get_ssh(self, node_ip):
-        return 'ssh hduser@' + node_ip + ' -i ../docker/keys/master -o StrictHostKeyChecking=no '
+    def get_ssh(self, user, node_ip):
+        return 'ssh ' + user + '@' + node_ip + ' -i ../docker/keys/master -o StrictHostKeyChecking=no '
 
     def get_log(self, container_id, service, num_lines):
 
@@ -279,4 +283,26 @@ class Cluster(object):
         res = envoy.run(command)
         return res.std_out
 
+    def get_java_service(self, ip):
+        command = self.get_ssh('hduser', ip) + "jps"
+        res = envoy.run(command)
+        services = ""
+        if res.status_code != 0:
+            print "Error updating services for ", ip
+        elif res.std_out:
+            services = ','.join([service.split(' ')[1] for service in res.std_out.split("\n") if len(service) > 0 and service.split(' ')[1] != "Jps"]).upper().replace("QUORUMPEERMAIN", "ZOOKEEPER")
+
+            print "Services for " + ip + " = " + services
+        return services
+
+    def update_java_services(self):
+        """
+        Updates the services running on each node.
+        """
+        nodes = self.db['node'].all()  # The .all is for allowing updates in the loop
+        for node in nodes:
+            services = self.get_java_service(node['ip'])
+            if len(services) > 0:
+                self.db['node'].update(dict(ip=node['ip'], services=services), ['ip'])
+                print "DB updated"
 

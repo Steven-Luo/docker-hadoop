@@ -42,10 +42,10 @@ Vagrant.configure("2") do |config|
     install_setuptools        = "wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | sudo python2.7;"
 
     # Install pip
-    install_pip               = "curl --silent --show-error --retry 5 https://raw.github.com/pypa/pip/master/contrib/get-pip.py | sudo python2.7;"
+    install_pip               = "curl --silent --show-error --retry 5 https://raw.githubusercontent.com/pypa/pip/master/contrib/get-pip.py | sudo python2.7;"
 
     # Install Hadoop dependencies
-    hadoop_deps               = "apt-get -y install openjdk-6-jdk maven build-essential autoconf automake libtool cmake zlib1g-dev pkg-config libssl-dev;"
+    hadoop_deps               = "apt-get -y install openjdk-6-jdk maven build-essential autoconf automake libtool cmake zlib1g-dev pkg-config libssl-dev python-dev python-m2crypto;"
 
     # Set JAVA_HOME
     set_java_home             = "export JAVA_HOME=/usr/lib/jvm/java-6-openjdk-amd64;"
