@@ -105,7 +105,7 @@ class Cluster(object):
                 time.sleep(1)
 
                 # Setting IP
-                command = 'sudo ./bin/pipework br1 ' + container_id + ' "' + node['ip'] + '/24"'
+                command = 'sudo ./bin/pipework br1 ' + container_id + ' "' + node['ip'] + '/20"'
                 res = envoy.run(command)
                 if res.status_code != 0:
                     print "Error with command: '" + command + "'"
@@ -168,10 +168,10 @@ class Cluster(object):
                 images_list.append(node['image'])
 
             if ip_range_list is None:
-                ip_range_list = iptools.IpRangeList(node['ip'] + '/24')
+                ip_range_list = iptools.IpRangeList(node['ip'] + '/20')
 
             if not node['ip'] in ip_range_list:
-                raise InvalidCluster("IPs from different /24 subnets used.")
+                raise InvalidCluster("IPs from different /20 subnets used.")
 
             # IP is not already defined.
             if node['ip'] in ip_list:
@@ -213,9 +213,9 @@ class Cluster(object):
             raise InvalidCluster("Missing JobTracker")
 
     def set_host_ip(self, node_ip):
-        r = iptools.IpRangeList(node_ip + '/24')
+        r = iptools.IpRangeList(node_ip + '/20')
         host_ip = list(r.__iter__())[-2]
-        # sudo ifconfig br1 10.0.10.254
+        # sudo ifconfig br1 10.0.15.254
         command = 'sudo ifconfig br1 ' + host_ip
         res = envoy.run(command)
         assert res.status_code == 0

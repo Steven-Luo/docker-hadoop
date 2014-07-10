@@ -139,7 +139,7 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     var nodeTemplate = {
         image:  $scope.possibleImages[0],
         hostname: "hadoop",
-        ip: "10.0.10.",
+        ip: "10.0.",
         services: []
     }
 
@@ -152,7 +152,9 @@ dashboardApp.controller('MainCtrl', function($scope, $window, $filter, $modal, $
     function addNewNode(index) {
         var newNode = _.clone(nodeTemplate, true);
         newNode.hostname += index;
-        newNode.ip += index;
+        var subnet = Math.floor(index / 255);
+        var lastQuadrant = (index + subnet) % 255;
+        newNode.ip += subnet + "." + lastQuadrant;
         if (index == 1) {
             newNode.services = ["JOBTRACKER"];
         } else if (index == 2) {
